@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel and Template Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .form-group input {
+            margin-bottom: 5px;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            color: #004085;
+            background-color: #cce5ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid #b8daff;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid #c3e6cb;
+        }
+        .instructions {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<h2>PDF Generator</h2>
+
+<div class="instructions">
+    <h3>Instructions:</h3>
+    <ol>
+        <li>Upload your Excel file (.xlsx) containing the data</li>
+        <li>Upload your HTML template</li>
+        <li>Variables in the HTML template should match Excel column names exactly</li>
+        <li>The system will generate a PDF for each row in the Excel file</li>
+        <li>You'll receive a ZIP file containing all generated PDFs</li>
+    </ol>
+</div>
+
+<form id="uploadForm">
+    <div class="form-group">
+        <label for="excel_file">Excel File (.xlsx):</label>
+        <input type="file" id="excel_file" name="excel_file" accept=".xlsx" required>
+    </div>
+
+    <div class="form-group">
+        <label for="template_file">HTML Template:</label>
+        <input type="file" id="template_file" name="template_file" accept=".html" required>
+    </div>
+
+    <button type="submit">Generate PDFs</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+    document.getElementById('uploadForm').onsubmit = function(e) {
+        e.preventDefault();
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '<div class="loading">Generating PDFs... Please wait...</div>';
+
+        var formData = new FormData(this);
+
+        fetch('/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            return response.json().then(err => {
+                throw new Error(err.error || 'Unknown error occurred');
+            });
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'documents.zip';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            resultDiv.innerHTML = '<div class="success">✓ PDFs generated successfully! Downloading ZIP file...</div>';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+        });
+    };
+</script>
+</body>
+</html>
