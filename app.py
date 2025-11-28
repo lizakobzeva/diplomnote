@@ -22,12 +22,24 @@ app.config.update(MAIL_CONFIG)
 def send_pdf_by_email(email: str, pdf_content: bytes, index: int) -> Dict:
     try:
         msg = MIMEMultipart()
-        msg['Subject'] = f'Your Certificate #{index}'
+        msg['Subject'] = f'Ваш сертификат'
         msg['From'] = app.config['MAIL_DEFAULT_SENDER']
         msg['To'] = email
 
-        text = "Please find your certificate attached."
-        msg.attach(MIMEText(text))
+        text_content = """
+        Здравствуйте!
+
+        Уважаемый пользователь,
+
+        Благодарим вас за участие в мероприятии. Благодарим вас за активное участие в жизни федеральной территории Сириус.
+        В приложении к письму вы можете найти сертификат. Это наша благодарность за ваш труд!
+
+
+        С уважением,
+        Талант и Успех
+        """
+
+        msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
 
         pdf_attachment = MIMEApplication(pdf_content, _subtype='pdf')
         pdf_attachment.add_header('Content-Disposition', 'attachment',
