@@ -12,16 +12,12 @@ from email.mime.text import MIMEText
 import smtplib
 from typing import Dict, List
 import json
+from config import MAIL_CONFIG
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'arinashalymovaa@gmail.com'
-app.config['MAIL_PASSWORD'] = 'lashvenytfvzfljh'
-app.config['MAIL_DEFAULT_SENDER'] = 'arinashalymovaa@gmail.com'
+app.config.update(MAIL_CONFIG)
 
 def send_pdf_by_email(email: str, pdf_content: bytes, index: int) -> Dict:
     try:
@@ -57,6 +53,7 @@ def upload_file():
 
             excel_file = request.files['excel_file']
             template_file = request.files['template_file']
+            delivery_method = request.form.get('delivery_method', 'zip')
 
             if not excel_file.filename.endswith('.xlsx'):
                 return jsonify({'error': 'Invalid Excel file format', 'success': False}), 400
@@ -87,24 +84,24 @@ def upload_file():
                                 data[column] = str(value)
 
                         rendered_html = template.render(**data)
-
                         pdf = weasyprint.HTML(string=rendered_html).write_pdf()
 
                         filename = f'document_{index + 1}.pdf'
                         zf.writestr(filename, pdf)
 
-                        if 'email' in row and pd.notna(row['email']):
-                            email_result = send_pdf_by_email(
-                                row['email'],
-                                pdf,
-                                index + 1
-                            )
-                            email_results.append(email_result)
-                        else:
-                            email_results.append({
-                                'success': False,
-                                'message': f'No email provided for row {index + 1}'
-                            })
+                        if delivery_method == 'email':
+                            if 'email' in row and pd.notna(row['email']):
+                                email_result = send_pdf_by_email(
+                                    row['email'],
+                                    pdf,
+                                    index + 1
+                                )
+                                email_results.append(email_result)
+                            else:
+                                email_results.append({
+                                    'success': False,
+                                    'message': f'No email provided for row {index + 1}'
+                                })
 
                         app.logger.info(f'Processed document {index + 1}')
 
@@ -126,7 +123,9 @@ def upload_file():
                 download_name=f'documents_{timestamp}.zip'
             )
 
-            response.headers['X-Email-Results'] = json.dumps(email_results)
+            if delivery_method == 'email':
+                response.headers['X-Email-Results'] = json.dumps(email_results)
+
             return response
 
         except Exception as e:

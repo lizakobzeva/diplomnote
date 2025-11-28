@@ -117,6 +117,15 @@
             margin: 5px 0;
             border-radius: 4px;
         }
+        .delivery-options {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .delivery-options label {
+            margin-right: 20px;
+        }
     </style>
 </head>
 <body>
@@ -132,11 +141,11 @@
         <h3>Generate PDFs Instructions:</h3>
         <ol>
             <li>Upload your Excel file (.xlsx) containing the data</li>
-            <li>Make sure your Excel file has an 'email' column for sending certificates</li>
+            <li>Make sure your Excel file has an 'email' column if you want to send certificates via email</li>
             <li>Upload your HTML template</li>
             <li>Variables in the HTML template should match Excel column names exactly</li>
-            <li>The system will generate PDFs and attempt to send them via email</li>
-            <li>You'll receive a ZIP file containing all generated PDFs</li>
+            <li>Choose your delivery method: ZIP download or Email</li>
+            <li>Generate your PDFs</li>
         </ol>
     </div>
 
@@ -149,6 +158,14 @@
         <div class="form-group">
             <label for="template_file">HTML Template:</label>
             <input type="file" id="template_file" name="template_file" accept=".html" required>
+        </div>
+
+        <div class="delivery-options">
+            <label>Delivery Method:</label>
+            <input type="radio" id="zip" name="delivery_method" value="zip" checked>
+            <label for="zip">Download ZIP</label>
+            <input type="radio" id="email" name="delivery_method" value="email">
+            <label for="email">Send via Email</label>
         </div>
 
         <button type="submit">Generate PDFs</button>
@@ -204,7 +221,12 @@
     document.getElementById('uploadForm').onsubmit = function(e) {
         e.preventDefault();
         const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = '<div class="loading">Generating PDFs and sending emails... Please wait...</div>';
+        const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked').value;
+        const loadingMessage = deliveryMethod === 'email' ?
+            'Generating PDFs and sending emails... Please wait...' :
+            'Generating PDFs... Please wait...';
+
+        resultDiv.innerHTML = `<div class="loading">${loadingMessage}</div>`;
 
         var formData = new FormData(this);
 
@@ -213,9 +235,12 @@
             body: formData
         })
         .then(response => {
-            const emailResults = JSON.parse(response.headers.get('X-Email-Results'));
-            if (response.ok) {
+            if (deliveryMethod === 'email') {
+                const emailResults = JSON.parse(response.headers.get('X-Email-Results'));
                 displayEmailResults(emailResults);
+            }
+
+            if (response.ok) {
                 return response.blob();
             }
             return response.json().then(err => {
@@ -231,7 +256,12 @@
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
-            resultDiv.innerHTML = '<div class="success">✓ PDFs generated successfully! Downloading ZIP file...</div>';
+
+            const successMessage = deliveryMethod === 'email' ?
+                '✓ PDFs generated and emails sent! Downloading ZIP file as backup...' :
+                '✓ PDFs generated successfully! Downloading ZIP file...';
+
+            resultDiv.innerHTML = `<div class="success">${successMessage}</div>`;
         })
         .catch(error => {
             console.error('Error:', error);
