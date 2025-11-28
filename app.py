@@ -6,9 +6,46 @@ import weasyprint
 import io
 import zipfile
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
+import smtplib
+from typing import Dict, List
+import json
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'arinashalymovaa@gmail.com'
+app.config['MAIL_PASSWORD'] = 'lashvenytfvzfljh'
+app.config['MAIL_DEFAULT_SENDER'] = 'arinashalymovaa@gmail.com'
+
+def send_pdf_by_email(email: str, pdf_content: bytes, index: int) -> Dict:
+    try:
+        msg = MIMEMultipart()
+        msg['Subject'] = f'Your Certificate #{index}'
+        msg['From'] = app.config['MAIL_DEFAULT_SENDER']
+        msg['To'] = email
+
+        text = "Please find your certificate attached."
+        msg.attach(MIMEText(text))
+
+        pdf_attachment = MIMEApplication(pdf_content, _subtype='pdf')
+        pdf_attachment.add_header('Content-Disposition', 'attachment',
+                                  filename=f'certificate_{index}.pdf')
+        msg.attach(pdf_attachment)
+
+        with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+            server.starttls()
+            server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+            server.send_message(msg)
+
+        return {'success': True, 'message': f'Email sent successfully to {email}'}
+    except Exception as e:
+        return {'success': False, 'message': f'Failed to send email to {email}: {str(e)}'}
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -34,6 +71,8 @@ def upload_file():
                 return jsonify({'error': 'Excel file is empty', 'success': False}), 400
 
             memory_file = io.BytesIO()
+            email_results = []
+
             with zipfile.ZipFile(memory_file, 'w') as zf:
                 for index, row in df.iterrows():
                     try:
@@ -54,21 +93,41 @@ def upload_file():
                         filename = f'document_{index + 1}.pdf'
                         zf.writestr(filename, pdf)
 
+                        if 'email' in row and pd.notna(row['email']):
+                            email_result = send_pdf_by_email(
+                                row['email'],
+                                pdf,
+                                index + 1
+                            )
+                            email_results.append(email_result)
+                        else:
+                            email_results.append({
+                                'success': False,
+                                'message': f'No email provided for row {index + 1}'
+                            })
+
                         app.logger.info(f'Processed document {index + 1}')
 
                     except Exception as e:
                         app.logger.error(f'Error processing row {index + 1}: {str(e)}')
+                        email_results.append({
+                            'success': False,
+                            'message': f'Error processing row {index + 1}: {str(e)}'
+                        })
                         continue
 
             memory_file.seek(0)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-            return send_file(
+            response = send_file(
                 memory_file,
                 mimetype='application/zip',
                 as_attachment=True,
                 download_name=f'documents_{timestamp}.zip'
             )
+
+            response.headers['X-Email-Results'] = json.dumps(email_results)
+            return response
 
         except Exception as e:
             app.logger.error(f'Error: {str(e)}')
