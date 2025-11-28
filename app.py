@@ -86,9 +86,6 @@ def upload_file():
                         rendered_html = template.render(**data)
                         pdf = weasyprint.HTML(string=rendered_html).write_pdf()
 
-                        filename = f'document_{index + 1}.pdf'
-                        zf.writestr(filename, pdf)
-
                         if delivery_method == 'email':
                             if 'email' in row and pd.notna(row['email']):
                                 email_result = send_pdf_by_email(
@@ -103,14 +100,17 @@ def upload_file():
                                     'message': f'No email provided for row {index + 1}'
                                 })
 
+                        filename = f'document_{index + 1}.pdf'
+                        zf.writestr(filename, pdf)
                         app.logger.info(f'Processed document {index + 1}')
 
                     except Exception as e:
                         app.logger.error(f'Error processing row {index + 1}: {str(e)}')
-                        email_results.append({
-                            'success': False,
-                            'message': f'Error processing row {index + 1}: {str(e)}'
-                        })
+                        if delivery_method == 'email':
+                            email_results.append({
+                                'success': False,
+                                'message': f'Error processing row {index + 1}: {str(e)}'
+                            })
                         continue
 
             memory_file.seek(0)
