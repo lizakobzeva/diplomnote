@@ -76,5 +76,41 @@ def upload_file():
 
     return render_template('index.html')
 
+@app.route('/get_fields', methods=['POST'])
+def get_fields():
+    try:
+        if 'excel_file' not in request.files:
+            return jsonify({'error': 'Excel file is required', 'success': False}), 400
+
+        excel_file = request.files['excel_file']
+        if not excel_file.filename.endswith('.xlsx'):
+            return jsonify({'error': 'Invalid file format', 'success': False}), 400
+
+        df = pd.read_excel(excel_file)
+        if df.empty:
+            return jsonify({'error': 'Excel file is empty', 'success': False}), 400
+
+        columns = df.columns.tolist()
+        first_row = df.iloc[0].to_dict()
+
+        processed_row = {}
+        for key, value in first_row.items():
+            if pd.isna(value):
+                processed_row[key] = ''
+            elif isinstance(value, pd.Timestamp):
+                processed_row[key] = value.strftime('%Y-%m-%d')
+            else:
+                processed_row[key] = str(value)
+
+        return jsonify({
+            'success': True,
+            'columns': columns,
+            'first_row': processed_row
+        })
+
+    except Exception as e:
+        app.logger.error(f'Error: {str(e)}')
+        return jsonify({'error': str(e), 'success': False}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
