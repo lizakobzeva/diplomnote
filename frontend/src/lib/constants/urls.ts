@@ -1,4 +1,4 @@
 export const urls = {
-  api: "http://localhost:8080/api/v1/",
+  api: "http://127.0.0.1:5000",
   app: "http://localhost:5173/",
 };

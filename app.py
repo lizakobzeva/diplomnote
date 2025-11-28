@@ -13,8 +13,10 @@ import smtplib
 from typing import Dict, List
 import json
 from config import MAIL_CONFIG
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 logging.basicConfig(level=logging.DEBUG)
 
 app.config.update(MAIL_CONFIG)
@@ -144,7 +146,6 @@ def upload_file():
             app.logger.error(f'Error: {str(e)}')
             return jsonify({'error': str(e), 'success': False}), 500
 
-    return render_template('index.html')
 
 @app.route('/get_fields', methods=['POST'])
 def get_fields():
