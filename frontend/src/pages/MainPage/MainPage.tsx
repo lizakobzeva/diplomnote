@@ -8,11 +8,12 @@ import { Plus, Copy, LogOut } from "lucide-react";
 import { ITemplate } from "@/lib/types";
 import { toast, Toaster } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logout } from "@/services/AuthByEmail/AuthByEmail";
+import { showSuccessNotification } from "@/lib/helpers/notification";
 
 const MainPage = () => {
   const navigate = useNavigate();
 
-  // Данные пользователя (замени на свой стор/контекст при необходимости)
   const userName = localStorage.getItem("user_name") || "Пользователь";
 
   const handleCopy = (template: ITemplate) => {
@@ -21,11 +22,9 @@ const MainPage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user_name");
-    // удали другие данные при необходимости
+    logout()
     navigate("/login");
-    toast.success("Вы вышли из аккаунта");
+    showSuccessNotification("Вы вышли из аккаунта");
   };
 
   return (

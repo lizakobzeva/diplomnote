@@ -12,9 +12,10 @@ const usersdb = [{
 }]
 export const loginFetch = async (email: string, password: string) => {
   const list = usersdb.map(user => `${user.email}${user.password}`)
-  if (localStorage.getItem('registration_token') || list.includes(`${email}${password}`)) {
+  const registrationToken = localStorage.getItem('registration_token')
+  if (registrationToken && registrationToken.includes(email) && registrationToken.includes(password) || list.includes(`${email}${password}`)) {
     localStorage.setItem("access_token", `${email}${password}`);
-    if (!localStorage.getItem('user_name') && usersdb.find(user => user.email == email)?.name) {
+    if (!localStorage.getItem('user_name')) {
       localStorage.setItem("user_name", usersdb.find(user => user.email == email)?.name || 'Пользователь');
     }
     showSuccessNotification("Вы успешно авторизованны")
@@ -32,12 +33,7 @@ export const registerFetch = async (
   showSuccessNotification('Вы успешно зарегистрировались')
 };
 export const logout = async () => {
-  try {
-    localStorage.removeItem("access_token")
-    return true;
-  } catch (e) {
-    console.log(e);
-  }
+  localStorage.removeItem("access_token")
 };
 
 
