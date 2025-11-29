@@ -1,25 +1,25 @@
 import { urls } from "@/lib/constants/urls";
-import { showErrorNotification } from "@/lib/helpers/notification";
+import { showErrorNotification, showSuccessNotification } from "@/lib/helpers/notification";
 import axios, { AxiosError } from "axios";
 const axiosInstance = axios.create({
   baseURL: urls.api,
 });
+
+const usersdb = [{
+  email: 'lizakobzeva@list.ru',
+  password: '123456',
+  name: 'Кобзева Елизавета'
+}]
 export const loginFetch = async (email: string, password: string) => {
-  try {
-    const res = await axiosInstance.post(
-      "/auth/login",
-      {
-        email,
-        password,
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
-    localStorage.setItem("access_token", res.data["token"]);
-    return res.data["token"];
-  } catch (e) {
-    const error = e as AxiosError;
-    showErrorNotification(error.message);
-    return false;
+  const list = usersdb.map(user => `${user.email}${user.password}`)
+  if (localStorage.getItem('registration_token') || list.includes(`${email}${password}`)) {
+    localStorage.setItem("access_token", `${email}${password}`);
+    if (!localStorage.getItem('user_name') && usersdb.find(user => user.email == email)?.name) {
+      localStorage.setItem("user_name", usersdb.find(user => user.email == email)?.name || 'Пользователь');
+    }
+    showSuccessNotification("Вы успешно авторизованны")
+  } else {
+    showErrorNotification("Не правильный логин или пароль")
   }
 };
 export const registerFetch = async (
@@ -27,30 +27,13 @@ export const registerFetch = async (
   email: string,
   password: string
 ) => {
-  try {
-    const res = await axiosInstance.post(
-      "/auth/register",
-      {
-        fio,
-        email,
-        password,
-        team: Math.floor(Math.random() * 100_000_000) + "",
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    localStorage.setItem("access_token", res.data["token"]);
-    return res.data["token"];
-  } catch (e) {
-    const error = e as AxiosError;
-    showErrorNotification(error.message);
-    return false;
-  }
+  localStorage.setItem("registration_token", `${email}${password}`);
+  localStorage.setItem("user_name", fio);
+  showSuccessNotification('Вы успешно зарегистрировались')
 };
 export const logout = async () => {
   try {
-    localStorage.removeItem("access_token");
+    localStorage.removeItem("access_token")
     return true;
   } catch (e) {
     console.log(e);

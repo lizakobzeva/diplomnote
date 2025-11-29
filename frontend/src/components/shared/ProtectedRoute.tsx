@@ -1,36 +1,22 @@
-import Loader from "@/components/ui/loader";
-// import { getUser } from "@/features/GetUser/model/service/GetUser/GetUser";
-import { getLocationQuery } from "@/lib/helpers/getLocationQuery";
-import { showErrorNotification } from "@/lib/helpers/notification";
-import { FC, PropsWithChildren, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { PropsWithChildren, useEffect } from "react";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
-export const ProtectedRoute: FC<PropsWithChildren> = ({ children }) => {
-  // const [isLoading, setIsLoading] = useState(true);
-  // const navigate = useNavigate();
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   const token = localStorage.getItem("access_token");
-  //   const access_token = token ? token : "";
-  //   if (!access_token) {
-  //     const backPath = getLocationQuery("back") || location.pathname.slice(1);
-  //     const url = backPath ? `/login?back=${backPath}` : "/login";
-  //     navigate(url);
-  //     return;
-  //   }
-  //   (async () => {
-  //     try {
-  //       // await getUser();
-  //     } catch (error) {
-  //       showErrorNotification(`Ошибка: ${error}`);
-  //       localStorage.removeItem("access_token");
-  //       navigate("/login");
-  //     }
-  //   })();
-  //   setIsLoading(false);
-  // }, [navigate]);
+export const ProtectedRoute = ({ children }: PropsWithChildren) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const token = localStorage.getItem("access_token");
 
-  // if (isLoading) return <Loader />;
+  useEffect(() => {
+    if (!token) {
+      const back = encodeURIComponent(location.pathname + location.search);
+      navigate(`/login?back=${back}`, { replace: true });
+    }
+  }, [token, navigate, location]);
 
-  return children;
+  if (!token) {
+    return null; // редирект уже пошёл
+  }
+
+  // Важно: рендерим Outlet, а не children напрямую!
+  return <Outlet />;
 };

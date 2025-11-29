@@ -1,79 +1,49 @@
-// import { MainPage } from "@/pages/MainPage";
-// import NotFoundPage from "@/pages/NotFoundPage";
-// import { LoginPage } from "@/pages/LoginPage";
-// import { RegisterPage } from "@/pages/RegisterPage";
-// import { ProfilePage } from "@/pages/ProfilePage";
-// import { ProtectedRoute } from "../../../app/providers/router/ui/ProtectedRoute";
-// import { createBrowserRouter, RouteObject } from "react-router-dom";
-// import AuthLayout from "@/app/layouts/authLayout";
-// import MainLayout from "@/app/layouts/mainLayout";
-// import { CartPage } from "@/pages/CartPage";
-// import { LikesPage } from "@/pages/LikesPage";
-// import { WagonsPage } from "@/pages/WagonsPage";
-
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import { GuestRoute } from "@/components/shared/GuestRoute";
+
 import AuthPageAsync from "@/pages/AuthPage/AuthPage.async";
-import MainPage from "@/pages/MainPage/MainPage";
 import MainPageAsync from "@/pages/MainPage/MainPage.async";
-import NewTemplatePageAsync from "@/pages/NewTemplatePage/NewTEmplatePage.async";
 import TemplatePageAsync from "@/pages/TemplatePage/TemplatePage.async";
-import { createBrowserRouter, RouteObject } from "react-router-dom";
+import NewTemplatePageAsync from "@/pages/NewTemplatePage/NewTEmplatePage.async";
 
-const authRoutes: RouteObject[] = [
-  {
-    path: "/login",
-    element: <AuthPageAsync />,
-  },
-  {
-    path: "/",
-    element: <MainPage />,
-  },
-  {
-    path: "/template/:id",
-    element: <TemplatePageAsync />,
-  },
-  {
-    path: "/newtemplate",
-    element: <NewTemplatePageAsync />,
-  },
-
-];
 
 export const appRoutersConfig = createBrowserRouter([
-  ...authRoutes,
+  // Гостевая зона — только для незалогиненных
   {
-    path: "/",
-    element: (
-      <ProtectedRoute>
-        <MainPageAsync />
-      </ProtectedRoute>
-    ),
-    errorElement: (
-      <ProtectedRoute>
-        <div>Error</div>
-      </ProtectedRoute>
-    ),
+    path: "/login",
+    element: <GuestRoute />,
     children: [
       {
-        path: "/",
-        element: <MainPage />,
+        index: true,
+        element: <AuthPageAsync />,
+      },
+    ],
+  },
+
+  // Защищённая зона — всё остальное
+  {
+    path: "/",
+    element: <ProtectedRoute />,
+    children: [
+      {
+        index: true,
+        element: <MainPageAsync />,
       },
       {
-        path: "/template/:id",
+        path: "template/:id",
         element: <TemplatePageAsync />,
       },
-      // {
-      //   path: "/cart",
-      //   element: <CartPage />,
-      // },
-      // {
-      //   path: "/profile",
-      //   element: <ProfilePage />,
-      // },
-      // {
-      //   path: "/wagons/:id",
-      //   element: <WagonsPage />,
-      // },
+      {
+        path: "newtemplate",
+        element: <NewTemplatePageAsync />,
+      },
     ],
+  },
+
+  // 404 → на главную (или на логин, если нет токена — ProtectedRoute сам разберётся)
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 ]);

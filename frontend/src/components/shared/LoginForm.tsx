@@ -24,7 +24,6 @@ const formSchema = z.object({
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -33,11 +32,10 @@ const LoginForm = () => {
     },
   });
 
-  // 2. Define a submit handler.
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const res = await loginFetch(values.email, values.password);
-    if (res) navigate("/");
-    console.log(values);
+    loginFetch(values.email, values.password);
+    navigate("/");
   }
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-col space-y-1.5 p-6">

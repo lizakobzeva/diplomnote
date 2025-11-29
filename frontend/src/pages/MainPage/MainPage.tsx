@@ -4,23 +4,58 @@ import { TEMPLATES } from "@/lib/constants/templates";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Copy } from "lucide-react";
+import { Plus, Copy, LogOut } from "lucide-react";
 import { ITemplate } from "@/lib/types";
-import { toast, Toaster } from "sonner"
+import { toast, Toaster } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MainPage = () => {
   const navigate = useNavigate();
 
+  // Данные пользователя (замени на свой стор/контекст при необходимости)
+  const userName = localStorage.getItem("user_name") || "Пользователь";
+
   const handleCopy = (template: ITemplate) => {
     navigator.clipboard.writeText(template.template);
-    toast.success(
-      `Шаблон \"${template.name}\" скопирован.`,
-    );
+    toast.success(`Шаблон "${template.name}" скопирован.`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_name");
+    // удали другие данные при необходимости
+    navigate("/login");
+    toast.success("Вы вышли из аккаунта");
   };
 
   return (
-    <div className="py-[5vh] px-[10vw] flex flex-col w-full h-[80vh] justify-between items-center overflow-visible">
+    <div className="relative py-[5vh] px-[10vw] flex flex-col w-full h-[80vh] justify-between items-center">
       <Toaster />
+
+      {/* Плашка профиля — НЕ влияет на расположение карусели */}
+      <div className="absolute top-6 right-[10vw] z-20">
+        <Card className="shadow-md">
+          <CardContent className="flex items-center gap-3 p-2 pr-3">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={localStorage.getItem("user_avatar") || undefined} />
+              <AvatarFallback>{userName[0]?.toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium max-w-[120px] truncate">
+              {userName}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Заголовок */}
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -30,6 +65,7 @@ const MainPage = () => {
         Выберите шаблон
       </motion.h1>
 
+      {/* Основной блок — полностью как было у тебя изначально */}
       <div className="flex w-full items-center justify-between mt-10 overflow-visible">
         <Carousel opts={{ align: "start" }} className="w-[70%] h-full overflow-visible">
           <CarouselContent className="flex space-x-6 overflow-visible">
@@ -45,12 +81,16 @@ const MainPage = () => {
                       <img
                         className="w-full h-[40vh] object-cover rounded-xl shadow-sm"
                         src={template.img}
+                        alt={template.name}
                       />
                       <span className="text-2xl font-semibold mt-4 text-center">
                         {template.name}
                       </span>
                       <Button
-                        onClick={(e) => { e.stopPropagation(); handleCopy(template); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(template);
+                        }}
                         className="mt-4 flex items-center space-x-2"
                       >
                         <Copy className="w-5 h-5" />
@@ -66,6 +106,7 @@ const MainPage = () => {
           <CarouselNext />
         </Carousel>
 
+        {/* Карточка "Новый шаблон" — без изменений */}
         <motion.div whileHover={{ scale: 1.1 }} className="overflow-visible">
           <Card
             className="cursor-pointer rounded-2xl shadow-lg h-[60vh] flex items-center justify-center border border-gray-200 hover:shadow-2xl transition overflow-visible"
